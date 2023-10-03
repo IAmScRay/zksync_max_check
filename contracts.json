@@ -1,0 +1,37 @@
+{
+    "contracts": {
+        "Dmail": {
+            "contract": "0x981F198286E40F9979274E0876636E9144B8FB8E"
+        },
+        "Mute": {
+            "contract": "0x8B791913eB07C32779a16750e3868aA8495F5964"
+        },
+        "PancakeSwap": {
+            "contract": "0xf8b59f3c3Ab33200ec80a8A58b2aA5F5D2a8944C"
+        },
+        "Velocore": {
+            "contract": "0xd999e16e68476bc749a28fc14a0c3b6d7073f50c"
+        },
+        "CrossChainNFT": {
+            "contract": "0x31DCD96f29BD32F3a1856247846E9d2f95C2b639"
+        },
+        "SyncSwap": {
+            "contract": "0x2da10A1e27bF85cEdD8FFb1AbBe97e53391C0295"
+        },
+        "SpaceFi": {
+            "contract": "0xbE7D1FD1f6748bbDefC4fbaCafBb11C6Fc506d1d"
+        },
+        "ZKS Domains": {
+            "contract": "0xcbe2093030f485adaaf5b61deb4d9ca8adeae509"
+        },
+        "TevaEra Citizen ID": {
+            "contract": "0xd29Aa7bdD3cbb32557973daD995A3219D307721f"
+        },
+        "TevaEra NFT": {
+            "contract": "0x50B2b7092bCC15fbB8ac74fE9796Cf24602897Ad"
+        },
+        "WooFi": {
+            "contract": "0xfd505702b37Ae9b626952Eb2DD736d9045876417"
+        }
+    }
+}
