@@ -163,6 +163,10 @@ def main():
             cell.value = "Сожжено на комиссию"
             letter = cell.column_letter
             sheet.column_dimensions[letter].width = len(cell.value) * 1.5
+        elif project == "interactions":
+            cell.value = "Кол-во взаимодействий"
+            letter = cell.column_letter
+            sheet.column_dimensions[letter].width = len(project) * 2.5
         else:
             cell.value = project
             letter = cell.column_letter
@@ -229,7 +233,7 @@ def main():
 
         column = 5
         for project, tx in data["tx"].items():
-            if project != "total" and project != "total_fee":
+            if project != "total" and project != "total_fee" and project != "interactions":
                 header = sheet.cell(row=1, column=column)
                 if header.value == project:
                     tx_cell = sheet.cell(row=row, column=column)
@@ -253,6 +257,15 @@ def main():
                     fee_cell = sheet.cell(row=row, column=column)
                     fee_cell.value = f"{str(tx)} (${round(tx * ETH_PRICE, 2)})"
                     fee_cell.alignment = Alignment(
+                        horizontal="center",
+                        vertical="center"
+                    )
+            elif project == "interactions":
+                header = sheet.cell(row=1, column=column)
+                if header.value == "Кол-во взаимодействий":
+                    interact_cell = sheet.cell(row=row, column=column)
+                    interact_cell.value = f"{str(tx)}"
+                    interact_cell.alignment = Alignment(
                         horizontal="center",
                         vertical="center"
                     )
