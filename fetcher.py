@@ -62,17 +62,22 @@ class Fetcher:
 
         for tx in response:
             for name, data in self.contracts.items():
+                if "interactions" not in results:
+                    results["interactions"] = 0
+
                 if name not in results:
                     results[name] = 0
 
                 if str(tx["to"]).lower() == str(data["contract"]).lower() and tx["status"] != "failed":
                     results[name] += 1
+                    results["interactions"] += 1
 
             if "Era Bridge" not in results:
                 results["Era Bridge"] = 0
 
             if tx["isL1Originated"]:
                 results["Era Bridge"] += 1
+                results["interactions"] += 1
 
             if "total" not in results:
                 results["total"] = len(response)
