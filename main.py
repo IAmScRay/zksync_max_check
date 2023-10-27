@@ -1,6 +1,6 @@
+import asyncio
 import sys
 import time
-from multiprocessing import cpu_count
 from os import mkdir
 from os.path import exists
 from pathlib import Path
@@ -8,33 +8,17 @@ from pathlib import Path
 from openpyxl.styles import Font, Border, Side, PatternFill, Alignment
 from openpyxl.workbook import Workbook
 
-from fetcher import get_price
-from stats_thread import StatsThread
+from fetcher import get_price, fetch_data
 
 
-def get_piece(piece: int, data: list):
-    """
-    Получение "кусочка" данных из списка.
-    :param piece: индекс "кусочка" (начинается с **1**)
-    :param data: список, откуда требуется взять данные.
-    :return:
-    """
-    offset = len(data) // cpu_count()
-
-    if piece == 1:
-        return data[piece * offset - offset + (piece - 1):piece + offset:]
-    else:
-        return data[piece * offset - offset + (piece - 1):piece * offset + piece:]
-
-
-def main():
+async def main():
     """
     Наша самая любимая точка входа :)
 
     Тут происходит "магия" (хотя, нихуя – тут сухая логика и код xD)
     """
 
-    ETH_PRICE = get_price("ETH")
+    ETH_PRICE = await get_price("ETH")
 
     with open("addresses.txt", "r", encoding="utf-8-sig") as file:
         content = [line.strip() for line in file]
@@ -59,27 +43,12 @@ def main():
             filename = name
 
     start = int(time.time())
+    print("Собираю данные...\n"
+          f"• кол-во адресов: {len(content)}\n")
 
-    threads = []
-    results = {}
-
-    if len(content) >= cpu_count():
-        for i in range(1, cpu_count() + 1):
-            piece = get_piece(i, content)
-            stats_thread = StatsThread(piece, f"Stats Thread #{i}")
-            threads.append(stats_thread)
-            stats_thread.start()
-    else:
-        stats_thread = StatsThread(content, f"Stats Thread #1")
-        threads.append(stats_thread)
-        stats_thread.start()
-
-    for thread in threads:
-        thread.join()
-
-    for thread in threads:
-        result = thread.results
-        results.update(result)
+    tasks = [fetch_data(address) for address in content]
+    r = await asyncio.gather(*tasks)
+    results = {account: result for account, result in zip(content, r)}
 
     end = int(time.time())
 
@@ -283,4 +252,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
