@@ -1,64 +1,46 @@
 import json
-import requests
+import httpx
 
 
-def get_price(token: str) -> float:
+async def get_price(token: str) -> float:
     """
     Получение **стоимости** токена в **USD** через API сервиса CryptoCompare.
-
-    Бывает, правда, *бзик*: из-за частых запросов к API (в силу многопоточности)
-    на выходе можно получить ошибку **Too Many Requests**, и мы в итоге не получаем цену.
 
     :param token: идентификатор токена (ETH, USDC, USDT...)
     :return: :class:`float` – стоимость с 2 знаками после запятой.
     """
-    resp = requests.get(f"https://min-api.cryptocompare.com/data/price?fsym={token}&tsyms=USD").json()
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(f"https://min-api.cryptocompare.com/data/price?fsym={token}&tsyms=USD")
+        resp_json = resp.json()
 
-    if "USD" not in resp:
-        return 0.0
+        if "USD" not in resp_json:
+            return 0.0
 
-    return float(resp["USD"])
+        return float(resp_json["USD"])
 
 
-class Fetcher:
-    """
-    Класс-обёртка вокруг получения данных из API эксплорера.
-    """
+class AsyncFetcher:
 
     API_URL = "https://block-explorer-api.mainnet.zksync.io"
 
-    def __init__(
-            self,
-            address: str
-    ):
-        """
-        Инициализация объекта.
-
-        :param address: EVM-адрес
-        """
+    def __init__(self, address: str):
         self.address = address
 
         with open("contracts.json", "r") as file:
             self.contracts = json.load(file)["contracts"]
 
-    def fetch_and_sort(self) -> dict:
-        """
-        Получение и сортировка данных.
-
-        Тут учитываются все **успешные** транзакции, подсчитывается сумма комиссий,
-        а также записывается общая сумма транзакций.
-
-        :return: :class:`dict` – словарь с данными
-        """
+    async def fetch_and_sort(self) -> dict:
         results = {}
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(
+                url=f"{AsyncFetcher.API_URL}/transactions",
+                params={
+                    "address": self.address,
+                    "limit": 100
+                }
+            )
 
-        response = requests.get(
-            url=f"{Fetcher.API_URL}/transactions",
-            params={
-                "address": self.address,
-                "limit": 100
-            }
-        ).json()["items"]
+            response = resp.json()["items"]
 
         for tx in response:
             for name, data in self.contracts.items():
@@ -90,7 +72,7 @@ class Fetcher:
 
         return results
 
-    def get_balances(self) -> dict:
+    async def get_balances(self) -> dict:
         """
         Получение всех доступных балансов всех токенов по адресу.
 
@@ -100,12 +82,11 @@ class Fetcher:
         :return: :class:`dict` – словарь с данными
         """
         results = {}
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url=f"{AsyncFetcher.API_URL}/address/{self.address}")
+            response_json = response.json()["balances"]
 
-        response = requests.get(
-            url=f"{Fetcher.API_URL}/address/{self.address}"
-        ).json()["balances"]
-
-        for address, data in response.items():
+        for address, data in response_json.items():
             if data["token"] is None:
                 continue
 
@@ -117,9 +98,21 @@ class Fetcher:
             if balance == 0:
                 continue
 
+            price = await get_price(symbol)
+
             results[symbol] = {
                 "balance": balance,
-                "usd_value": round(balance * get_price(symbol), 2) if symbol in ["ETH", "USDT", "USDC"] else "* * *"
+                "usd_value": round(balance * price, 2) if symbol in ["ETH", "USDT", "USDC"] else "* * *"
             }
 
         return results
+
+
+async def fetch_data(address):
+    fetcher = AsyncFetcher(address)
+    transactions = await fetcher.fetch_and_sort()
+    balances = await fetcher.get_balances()
+    return {
+        "tx": transactions,
+        "balances": balances
+    }
